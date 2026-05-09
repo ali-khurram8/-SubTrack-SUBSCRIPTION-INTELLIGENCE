@@ -9,27 +9,27 @@ A full-stack web application for tracking recurring subscriptions, detecting hid
 ```
 subscription-system-main/
 ├── backend/
-│   ├── config/         
-│   ├── controllers/
-│   ├── middleware/
-│   ├── models/
-│   ├── routes/
-│   └── server.js
+│   ├── config/          # Database connection (pg Pool + Supabase SSL)
+│   ├── controllers/     # Route handlers — auth, subscriptions, data
+│   ├── middleware/       # JWT auth guard & express-validator rules
+│   ├── models/          # SQL query layer — User, Subscription, Transaction
+│   ├── routes/          # Express router with validation middleware
+│   └── server.js        # Entry point — helmet, rate-limit, CORS, cron
 ├── frontend/
-│   ├── css/style.css
-│   ├── js/app.js
-│   ├── index.html
-│   ├── dashboard.html
+│   ├── css/style.css    # 3D dark-theme UI with layered box-shadows
+│   ├── js/app.js        # Shared helpers — Auth, Api, Toast, Fmt, Sidebar
+│   ├── index.html       # Landing / login / register page
+│   ├── dashboard.html   # Overview stats and upcoming renewals
 │   ├── subscriptions.html
 │   ├── transactions.html
 │   ├── hidden-charges.html
 │   ├── alerts.html
-│   └── analytics.html
+│   └── analytics.html   # Chart.js line & doughnut charts
 └── database/
-    ├── 01_schema.sql
-    ├── 02_sample_data.sql
-    ├── 03_triggers.sql
-    └── 04_stored_procedures.sql
+    ├── 01_schema_supabase.sql        # 8 PostgreSQL tables
+    ├── 02_sample_data_supabase.sql   # Demo seed data
+    ├── 03_triggers_supabase.sql      # 4 trigger functions
+    └── 04_stored_procedures_supabase.sql  # 6 stored procedures
 ```
 
 ---
@@ -108,10 +108,10 @@ Replace the `DATABASE_URL` with your Supabase connection string (found under **P
 
 Run these SQL files **in order** in the Supabase SQL Editor (or any PostgreSQL client):
 
-1. `database/01_schema.sql` — creates all tables
-2. `database/02_sample_data.sql` — inserts demo data
-3. `database/03_triggers.sql` — creates trigger functions
-4. `database/04_stored_procedures.sql` — creates stored procedures
+1. `database/01_schema_supabase.sql` — creates all tables
+2. `database/02_sample_data_supabase.sql` — inserts demo data
+3. `database/03_triggers_supabase.sql` — creates trigger functions
+4. `database/04_stored_procedures_supabase.sql` — creates stored procedures
 
 ### 5. Start the server
 

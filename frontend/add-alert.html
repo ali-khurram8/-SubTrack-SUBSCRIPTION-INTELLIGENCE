@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SubTrack — Add Alert</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">💳</div>
+        <div>
+          <div class="brand-name">SUBTRACK</div>
+          <div class="brand-sub">Subscription Intelligence</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
+      <div class="sidebar-footer" id="sidebar-user"></div>
+    </aside>
+
+    <main class="main-content">
+      <div class="topbar">
+        <div>
+          <div class="page-title">Add Alert</div>
+          <div class="page-subtitle">Create a custom notification</div>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="card" style="max-width: 600px; padding: 24px;">
+            <form id="add-alert-form" onsubmit="submitForm(event)">
+                <div class="grid-2" style="margin-bottom: 16px; gap: 16px;">
+                    <div>
+                        <label style="display:block; margin-bottom: 8px; font-weight: 600;">Subscription ID (Optional)</label>
+                        <input type="number" id="subscription_id" class="form-control" placeholder="ID of the subscription" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom: 8px; font-weight: 600;">Severity</label>
+                        <select id="severity" class="form-control" required style="width: 100%;">
+                            <option value="info">Info</option>
+                            <option value="warning">Warning</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display:block; margin-bottom: 8px; font-weight: 600;">Alert Type</label>
+                    <select id="alert_type" class="form-control" required style="width: 100%;">
+                        <option value="renewal_reminder">Renewal Reminder</option>
+                        <option value="overcharge_detected">Overcharge Detected</option>
+                        <option value="duplicate_detected">Duplicate Detected</option>
+                        <option value="subscription_expired">Subscription Expired</option>
+                        <option value="payment_failed">Payment Failed</option>
+                        <option value="price_increased">Price Increased</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display:block; margin-bottom: 8px; font-weight: 600;">Title</label>
+                    <input type="text" id="title" class="form-control" required placeholder="Alert title" style="width: 100%;">
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display:block; margin-bottom: 8px; font-weight: 600;">Message</label>
+                    <textarea id="message" class="form-control" rows="3" required placeholder="Alert message details..." style="width: 100%; resize: vertical;"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                    <a href="alerts.html" class="btn btn-outline">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Alert</button>
+                </div>
+            </form>
+        </div>
+      </div>
+    </main>
+
+    <script src="js/app.js"></script>
+    <script>
+      Auth.requireAuth();
+      initSidebar();
+      
+      async function submitForm(e) {
+          e.preventDefault();
+          const subIdStr = document.getElementById('subscription_id').value;
+          const body = {
+              subscription_id: subIdStr ? parseInt(subIdStr) : null,
+              alert_type: document.getElementById('alert_type').value,
+              severity: document.getElementById('severity').value,
+              title: document.getElementById('title').value,
+              message: document.getElementById('message').value
+          };
+          
+          try {
+              const btn = document.querySelector('button[type="submit"]');
+              btn.disabled = true;
+              btn.innerText = 'Saving...';
+              
+              await Api.post('/alerts', body);
+              Toast.success('Alert added successfully');
+              setTimeout(() => {
+                  window.location.href = 'alerts.html';
+              }, 1000);
+          } catch(err) {
+              Toast.error(err.message);
+              document.querySelector('button[type="submit"]').disabled = false;
+              document.querySelector('button[type="submit"]').innerText = 'Save Alert';
+          }
+      }
+    </script>
+  </body>
+</html>

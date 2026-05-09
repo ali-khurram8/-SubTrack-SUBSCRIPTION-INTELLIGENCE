@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SubTrack — Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">💳</div>
+        <div>
+          <div class="brand-name">SUBTRACK</div>
+          <div class="brand-sub">Subscription Intelligence</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
+      <div class="sidebar-footer" id="sidebar-user"></div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main-content">
+      <div class="topbar">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-subtitle" id="greeting">
+            Good morning — here's your subscription overview
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <a href="add-subscription.html" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Add Subscription
+          </a>
+        </div>
+      </div>
+
+      <div class="page-body">
+        <!-- Stat Cards -->
+        <div class="grid-4 mb-4" id="stat-cards">
+          <div class="stat-card cyan">
+            <div class="stat-icon cyan">
+              <i class="bi bi-collection-fill"></i>
+            </div>
+            <div class="stat-value" id="stat-active">—</div>
+            <div class="stat-label">Active Subscriptions</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon green"><i class="bi bi-wallet2"></i></div>
+            <div class="stat-value" id="stat-spend">—</div>
+            <div class="stat-label">This Month's Spend</div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon orange">
+              <i class="bi bi-shield-exclamation"></i>
+            </div>
+            <div class="stat-value" id="stat-hidden">—</div>
+            <div class="stat-label">Hidden Charges</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon red"><i class="bi bi-bell-fill"></i></div>
+            <div class="stat-value" id="stat-alerts">—</div>
+            <div class="stat-label">Unread Alerts</div>
+          </div>
+        </div>
+
+        <div class="grid-2 mb-4">
+          <!-- Upcoming Renewals -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">⏰ Upcoming Renewals</span>
+              <a href="subscriptions.html" class="btn btn-outline btn-sm"
+                >View All</a
+              >
+            </div>
+            <div id="renewals-list"><div class="loading">Loading...</div></div>
+          </div>
+
+          <!-- Recent Alerts -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">🔔 Recent Alerts</span>
+              <a href="alerts.html" class="btn btn-outline btn-sm">View All</a>
+            </div>
+            <div id="alerts-list"><div class="loading">Loading...</div></div>
+          </div>
+        </div>
+
+        <!-- Recent Hidden Charges -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <span class="card-title">⚠️ Hidden Charges Detected</span>
+            <a href="hidden-charges.html" class="btn btn-outline btn-sm"
+              >View All</a
+            >
+          </div>
+          <div id="hidden-charges-list">
+            <div class="loading">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Monthly Spend Bar (quick visual) -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📊 Subscriptions By Category</span>
+            <a href="analytics.html" class="btn btn-outline btn-sm"
+              >Full Analytics</a
+            >
+          </div>
+          <div class="card-body" id="category-bars">
+            <div class="loading">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="js/app.js"></script>
+    <script>
+      Auth.requireAuth();
+      initSidebar();
+
+      // Greeting
+      const hour = new Date().getHours();
+      document.getElementById("greeting").textContent =
+        (hour < 12
+          ? "Good morning"
+          : hour < 18
+            ? "Good afternoon"
+            : "Good evening") +
+        ` ${Auth.getUser()?.full_name?.split(" ")[0]} — here's your subscription overview`;
+
+      async function loadDashboard() {
+        try {
+          const [meData, subsData, alertsData, hcData, analyticsData] =
+            await Promise.all([
+              Api.get("/auth/me"),
+              Api.get("/subscriptions"),
+              Api.get("/alerts"),
+              Api.get("/hidden-charges?unresolved=true"),
+              Api.get("/transactions/analytics"),
+            ]);
+
+          // Stats
+          const stats = meData.stats;
+          document.getElementById("stat-active").textContent =
+            stats.active_subscriptions;
+          document.getElementById("stat-spend").textContent = Fmt.currency(
+            stats.monthly_spend,
+          );
+          document.getElementById("stat-hidden").textContent =
+            stats.unresolved_hidden_charges;
+          document.getElementById("stat-alerts").textContent =
+            stats.unread_alerts;
+
+          // Upcoming renewals (next 30 days, active)
+          const upcoming = subsData.data
+            .filter(
+              (s) =>
+                s.status === "active" &&
+                s.days_until_renewal >= 0 &&
+                s.days_until_renewal <= 30,
+            )
+            .slice(0, 5);
+          document.getElementById("renewals-list").innerHTML = upcoming.length
+            ? upcoming
+                .map(
+                  (s) => `
+            <div class="sub-item">
+                <div class="sub-icon" style="background:${s.color_hex}20;color:${s.color_hex}">
+                    <i class="bi ${s.category_icon}"></i>
+                </div>
+                <div class="sub-info">
+                    <div class="sub-name">${s.service_name}</div>
+                    <div class="sub-meta">
+                        <span>${s.category}</span> · <span>${Fmt.relativeDate(s.next_billing_date)}</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="sub-amount">${Fmt.currency(s.amount, s.currency)}</div>
+                    <div class="sub-cycle">per ${Fmt.cycle(s.billing_cycle)}</div>
+                </div>
+            </div>`,
+                )
+                .join("")
+            : '<div class="empty-state"><i class="bi bi-calendar-check"></i><p>No renewals in next 30 days</p></div>';
+
+          // Recent alerts
+          const recentAlerts = alertsData.data.slice(0, 5);
+          document.getElementById("alerts-list").innerHTML = recentAlerts.length
+            ? recentAlerts
+                .map(
+                  (a) => `
+            <div class="alert-item ${a.is_read ? "" : "unread"} ${a.severity}">
+                <div class="alert-icon ${a.severity}">
+                    <i class="bi ${
+                      a.severity === "critical"
+                        ? "bi-exclamation-triangle-fill"
+                        : a.severity === "warning"
+                          ? "bi-exclamation-circle-fill"
+                          : "bi-bell-fill"
+                    }"></i>
+                </div>
+                <div>
+                    <div class="alert-title">${a.title}</div>
+                    <div class="alert-msg">${a.message}</div>
+                    <div class="alert-time">${Fmt.date(a.created_at)}</div>
+                </div>
+            </div>`,
+                )
+                .join("")
+            : '<div class="empty-state"><i class="bi bi-bell-slash"></i><p>No alerts</p></div>';
+
+          // Hidden charges
+          const hc = hcData.data.slice(0, 4);
+          document.getElementById("hidden-charges-list").innerHTML = hc.length
+            ? `<table class="data-table">
+                <thead><tr>
+                    <th>Service</th><th>Type</th><th>Expected</th><th>Charged</th>
+                    <th>Difference</th><th>Detected</th>
+                </tr></thead>
+                <tbody>${hc
+                  .map(
+                    (h) => `
+                <tr>
+                    <td><strong>${h.service_name}</strong></td>
+                    <td>${Fmt.chargeType(h.charge_type)}</td>
+                    <td>${Fmt.currency(h.expected_amount)}</td>
+                    <td>${Fmt.currency(h.actual_amount)}</td>
+                    <td class="${h.difference > 0 ? "text-red" : "text-green"}">
+                        ${h.difference > 0 ? "+" : ""}${Fmt.currency(h.difference)}
+                    </td>
+                    <td class="text-muted">${Fmt.date(h.detected_at)}</td>
+                </tr>`,
+                  )
+                  .join("")}
+                </tbody>
+            </table>`
+            : '<div class="empty-state"><i class="bi bi-shield-check"></i><p>No hidden charges detected — looking clean!</p></div>';
+
+          // Category bars
+          const cats = analyticsData.data.byCategory;
+          if (cats && cats.length) {
+            const max = Math.max(...cats.map((c) => c.total_spent));
+            document.getElementById("category-bars").innerHTML = cats
+              .map(
+                (c) => `
+                <div style="margin-bottom:16px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <i class="bi ${c.icon}" style="color:${c.color};font-size:14px"></i>
+                            <span style="font-size:13px;font-weight:600">${c.category}</span>
+                            <span class="text-muted text-sm">(${c.sub_count} sub${c.sub_count !== 1 ? "s" : ""})</span>
+                        </div>
+                        <strong style="font-size:13px">${Fmt.currency(c.total_spent)}</strong>
+                    </div>
+                    <div style="height:6px;background:var(--border);border-radius:10px;overflow:hidden">
+                        <div style="height:100%;width:${((c.total_spent / max) * 100).toFixed(1)}%;
+                            background:${c.color};border-radius:10px;transition:width 0.8s ease"></div>
+                    </div>
+                </div>`,
+              )
+              .join("");
+          } else {
+            document.getElementById("category-bars").innerHTML =
+              '<div class="empty-state"><i class="bi bi-bar-chart"></i><p>No transaction data yet</p></div>';
+          }
+        } catch (err) {
+          Toast.error("Failed to load dashboard: " + err.message);
+        }
+      }
+
+      loadDashboard();
+    </script>
+  </body>
+</html>

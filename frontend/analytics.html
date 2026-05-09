@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SubTrack — Analytics</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon"><i class="bi bi-credit-card-2-front-fill" style="color:#fff"></i></div>
+        <div>
+          <div class="brand-name">SubTrack</div>
+          <div class="brand-sub">Subscription Intelligence</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
+      <div class="sidebar-footer" id="sidebar-user"></div>
+    </aside>
+
+    <main class="main-content">
+      <div class="topbar">
+        <div>
+          <div class="page-title">Analytics</div>
+          <div class="page-subtitle">Understand your spending habits</div>
+        </div>
+      </div>
+      <div class="page-body">
+        <!-- Top summary cards -->
+        <div class="grid-3 mb-4" id="summary-cards">
+          <div class="stat-card cyan">
+            <div class="stat-icon cyan"><i class="bi bi-wallet2"></i></div>
+            <div class="stat-value" id="total-spend">--</div>
+            <div class="stat-label">Total Spend This Year</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon green"><i class="bi bi-bar-chart-fill"></i></div>
+            <div class="stat-value" id="avg-monthly">--</div>
+            <div class="stat-label">Avg Monthly Spend</div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon orange"><i class="bi bi-tags-fill"></i></div>
+            <div class="stat-value" id="top-category">--</div>
+            <div class="stat-label">Top Category</div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid-2 mb-4">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Monthly Spending Trend</span></div>
+            <div class="card-body">
+              <canvas id="trendChart" height="260"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Spending by Category</span></div>
+            <div class="card-body">
+              <canvas id="categoryChart" height="260"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category breakdown table -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Category Breakdown</span></div>
+          <div id="category-table"><div class="loading">Loading...</div></div>
+        </div>
+      </div>
+    </main>
+
+    <script src="js/app.js"></script>
+    <script>
+      Auth.requireAuth();
+      initSidebar();
+
+      // Chart.js global dark theme
+      Chart.defaults.color = '#9494a8';
+      Chart.defaults.borderColor = 'rgba(255,255,255,0.04)';
+      Chart.defaults.font.family = "'Inter', sans-serif";
+
+      async function loadAnalytics() {
+        try {
+          const data = await Api.get('/transactions/analytics');
+          const cats = data.data.byCategory || [];
+          const trend = data.data.trend || [];
+
+          // ── Summary Cards ──
+          const totalSpend = trend.reduce((sum, t) => sum + parseFloat(t.total), 0);
+          const avgMonthly = trend.length ? totalSpend / trend.length : 0;
+          const topCat = cats.length ? cats[0].category : 'N/A';
+
+          document.getElementById('total-spend').textContent = Fmt.currency(totalSpend);
+          document.getElementById('avg-monthly').textContent = Fmt.currency(avgMonthly);
+          document.getElementById('top-category').textContent = topCat;
+
+          // ── Monthly Trend Line Chart ──
+          if (trend.length) {
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            const gradient = trendCtx.createLinearGradient(0, 0, 0, 260);
+            gradient.addColorStop(0, 'rgba(124, 92, 252, 0.3)');
+            gradient.addColorStop(1, 'rgba(124, 92, 252, 0.0)');
+
+            new Chart(trendCtx, {
+              type: 'line',
+              data: {
+                labels: trend.map(t => {
+                  const [y, m] = t.month.split('-');
+                  return new Date(y, m - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+                }),
+                datasets: [{
+                  label: 'Spending',
+                  data: trend.map(t => parseFloat(t.total)),
+                  borderColor: '#7c5cfc',
+                  backgroundColor: gradient,
+                  borderWidth: 2.5,
+                  pointBackgroundColor: '#7c5cfc',
+                  pointBorderColor: '#18181e',
+                  pointBorderWidth: 2,
+                  pointRadius: 5,
+                  pointHoverRadius: 7,
+                  tension: 0.4,
+                  fill: true
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    backgroundColor: '#222230',
+                    titleColor: '#ececf1',
+                    bodyColor: '#9494a8',
+                    borderColor: 'rgba(255,255,255,0.06)',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: false,
+                    callbacks: {
+                      label: (ctx) => Fmt.currency(ctx.parsed.y)
+                    }
+                  }
+                },
+                scales: {
+                  x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 11 } }
+                  },
+                  y: {
+                    grid: { color: 'rgba(255,255,255,0.03)' },
+                    ticks: {
+                      font: { size: 11 },
+                      callback: (v) => '$' + v
+                    }
+                  }
+                }
+              }
+            });
+          }
+
+          // ── Category Doughnut Chart ──
+          if (cats.length) {
+            new Chart(document.getElementById('categoryChart'), {
+              type: 'doughnut',
+              data: {
+                labels: cats.map(c => c.category),
+                datasets: [{
+                  data: cats.map(c => parseFloat(c.total_spent)),
+                  backgroundColor: cats.map(c => c.color),
+                  borderColor: '#18181e',
+                  borderWidth: 3,
+                  hoverOffset: 8
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '62%',
+                plugins: {
+                  legend: {
+                    position: 'bottom',
+                    labels: {
+                      padding: 16,
+                      usePointStyle: true,
+                      pointStyle: 'rectRounded',
+                      font: { size: 12 }
+                    }
+                  },
+                  tooltip: {
+                    backgroundColor: '#222230',
+                    titleColor: '#ececf1',
+                    bodyColor: '#9494a8',
+                    borderColor: 'rgba(255,255,255,0.06)',
+                    borderWidth: 1,
+                    padding: 12,
+                    callbacks: {
+                      label: (ctx) => `${ctx.label}: ${Fmt.currency(ctx.parsed)}`
+                    }
+                  }
+                }
+              }
+            });
+          }
+
+          // ── Category Table ──
+          if (cats.length) {
+            const total = cats.reduce((s, c) => s + parseFloat(c.total_spent), 0);
+            document.getElementById('category-table').innerHTML = `
+              <table class="data-table">
+                <thead><tr>
+                  <th>Category</th><th>Subscriptions</th><th>Total Spent</th><th>% of Total</th>
+                </tr></thead>
+                <tbody>${cats.map(c => {
+                  const pct = ((parseFloat(c.total_spent) / total) * 100).toFixed(1);
+                  return `<tr>
+                    <td><div style="display:flex;align-items:center;gap:8px">
+                      <i class="bi ${c.icon}" style="color:${c.color};font-size:16px"></i>
+                      <strong>${c.category}</strong>
+                    </div></td>
+                    <td>${c.sub_count}</td>
+                    <td>${Fmt.currency(c.total_spent)}</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <div style="flex:1;height:4px;background:rgba(255,255,255,0.04);border-radius:2px;overflow:hidden">
+                          <div style="height:100%;width:${pct}%;background:${c.color};border-radius:2px"></div>
+                        </div>
+                        <span style="font-size:12px;color:var(--text-secondary);min-width:40px">${pct}%</span>
+                      </div>
+                    </td>
+                  </tr>`;
+                }).join('')}</tbody>
+              </table>`;
+          } else {
+            document.getElementById('category-table').innerHTML = '<div class="empty-state"><i class="bi bi-bar-chart"></i><p>No data yet</p></div>';
+          }
+
+        } catch (err) {
+          Toast.error('Failed to load analytics: ' + err.message);
+        }
+      }
+
+      loadAnalytics();
+    </script>
+  </body>
+</html>

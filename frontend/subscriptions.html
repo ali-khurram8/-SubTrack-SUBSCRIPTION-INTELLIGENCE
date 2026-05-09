@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SubTrack — Subscriptions</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+      .filter-tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .filter-tab {
+        padding: 6px 16px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+      }
+      .filter-tab.active {
+        border-color: var(--accent-cyan);
+        color: var(--accent-cyan);
+        background: rgba(0, 212, 255, 0.08);
+      }
+      .sub-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        transition: var(--transition);
+      }
+      .sub-card:hover {
+        border-color: rgba(0, 212, 255, 0.2);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-glow);
+      }
+      .sub-card-header {
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .sub-card-body {
+        padding: 0 20px 16px;
+      }
+      .sub-meta-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 12px;
+      }
+      .sub-meta-row:last-child {
+        border-bottom: none;
+      }
+      .sub-meta-key {
+        color: var(--text-muted);
+      }
+      .sub-meta-val {
+        color: var(--text-primary);
+        font-weight: 500;
+      }
+      .sub-card-footer {
+        padding: 12px 20px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+      .urgency-bar {
+        height: 3px;
+        border-radius: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">💳</div>
+        <div>
+          <div class="brand-name">SUBTRACK</div>
+          <div class="brand-sub">Subscription Intelligence</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
+      <div class="sidebar-footer" id="sidebar-user"></div>
+    </aside>
+
+    <main class="main-content">
+      <div class="topbar">
+        <div>
+          <div class="page-title">Subscriptions</div>
+          <div class="page-subtitle">
+            Manage all your active and past subscriptions
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div style="position: relative">
+            <i
+              class="bi bi-search"
+              style="
+                position: absolute;
+                left: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: var(--text-muted);
+              "
+            ></i>
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Search..."
+              class="form-control"
+              style="padding-left: 36px; width: 220px"
+              oninput="filterSubs()"
+            />
+          </div>
+          <a href="add-subscription.html" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Add New
+          </a>
+        </div>
+      </div>
+
+      <div class="page-body">
+        <!-- Filter Tabs -->
+        <div style="margin-bottom: 24px">
+          <div class="filter-tabs">
+            <button class="filter-tab active" onclick="setFilter('all', this)">
+              All
+            </button>
+            <button class="filter-tab" onclick="setFilter('active', this)">
+              Active
+            </button>
+            <button class="filter-tab" onclick="setFilter('paused', this)">
+              Paused
+            </button>
+            <button class="filter-tab" onclick="setFilter('cancelled', this)">
+              Cancelled
+            </button>
+            <button class="filter-tab" onclick="setFilter('expired', this)">
+              Expired
+            </button>
+          </div>
+        </div>
+
+        <!-- Summary Row -->
+        <div class="grid-3 mb-4" id="summary-row">
+          <div class="card" style="padding: 20px">
+            <div
+              style="
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: var(--text-muted);
+                margin-bottom: 8px;
+              "
+            >
+              Total Monthly
+            </div>
+            <div
+              style="
+                font-family: var(--font-display);
+                font-size: 28px;
+                color: var(--accent-cyan);
+              "
+              id="sum-monthly"
+            >
+              —
+            </div>
+          </div>
+          <div class="card" style="padding: 20px">
+            <div
+              style="
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: var(--text-muted);
+                margin-bottom: 8px;
+              "
+            >
+              Total Yearly Est.
+            </div>
+            <div
+              style="
+                font-family: var(--font-display);
+                font-size: 28px;
+                color: var(--text-primary);
+              "
+              id="sum-yearly"
+            >
+              —
+            </div>
+          </div>
+          <div class="card" style="padding: 20px">
+            <div
+              style="
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: var(--text-muted);
+                margin-bottom: 8px;
+              "
+            >
+              Active Count
+            </div>
+            <div
+              style="
+                font-family: var(--font-display);
+                font-size: 28px;
+                color: var(--accent-green);
+              "
+              id="sum-count"
+            >
+              —
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid of subscription cards -->
+        <div class="grid-3" id="subs-grid">
+          <div class="loading" style="grid-column: 1/-1">
+            Loading subscriptions...
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Cancel Confirmation Modal -->
+    <div
+      id="cancel-modal"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 999;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div class="card" style="width: 380px; padding: 28px; text-align: center">
+        <i
+          class="bi bi-exclamation-triangle-fill"
+          style="
+            font-size: 36px;
+            color: var(--accent-orange);
+            margin-bottom: 16px;
+            display: block;
+          "
+        ></i>
+        <div style="font-weight: 700; font-size: 16px; margin-bottom: 8px">
+          Cancel Subscription?
+        </div>
+        <div
+          style="
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-bottom: 24px;
+          "
+          id="cancel-modal-name"
+        ></div>
+        <div style="display: flex; gap: 12px; justify-content: center">
+          <button class="btn btn-outline" onclick="closeCancelModal()">
+            Keep It
+          </button>
+          <button class="btn btn-danger" onclick="confirmCancel()">
+            Yes, Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+      Auth.requireAuth();
+      initSidebar();
+
+      let allSubs = [];
+      let currentFilter = "all";
+      let cancelTarget = null;
+
+      async function loadSubs() {
+        try {
+          const data = await Api.get("/subscriptions");
+          allSubs = data.data;
+          renderSubs();
+          updateSummary();
+        } catch (err) {
+          Toast.error("Failed to load subscriptions");
+        }
+      }
+
+      function setFilter(f, btn) {
+        currentFilter = f;
+        document
+          .querySelectorAll(".filter-tab")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        renderSubs();
+      }
+
+      function filterSubs() {
+        renderSubs();
+      }
+
+      function renderSubs() {
+        const q = (
+          document.getElementById("search-input")?.value || ""
+        ).toLowerCase();
+        let subs = allSubs.filter(
+          (s) =>
+            (currentFilter === "all" || s.status === currentFilter) &&
+            (!q ||
+              s.service_name.toLowerCase().includes(q) ||
+              s.category.toLowerCase().includes(q)),
+        );
+
+        if (!subs.length) {
+          document.getElementById("subs-grid").innerHTML =
+            `<div class="empty-state" style="grid-column:1/-1">
+                <i class="bi bi-collection"></i>
+                <p>No subscriptions found. <a href="add-subscription.html" style="color:var(--accent-cyan)">Add one?</a></p>
+            </div>`;
+          return;
+        }
+
+        document.getElementById("subs-grid").innerHTML = subs
+          .map((s) => {
+            const urgency =
+              s.days_until_renewal !== null &&
+              s.days_until_renewal <= 7 &&
+              s.status === "active";
+            const urgencyColor =
+              s.days_until_renewal <= 1
+                ? "var(--accent-red)"
+                : s.days_until_renewal <= 3
+                  ? "var(--accent-orange)"
+                  : "var(--accent-cyan)";
+            return `
+        <div class="sub-card">
+            ${urgency ? `<div class="urgency-bar" style="background:${urgencyColor}"></div>` : ""}
+            <div class="sub-card-header">
+                <div class="sub-icon" style="background:${s.color_hex}18;color:${s.color_hex};width:48px;height:48px;border-radius:14px;flex-shrink:0">
+                    <i class="bi ${s.category_icon}" style="font-size:22px"></i>
+                </div>
+                <div style="flex:1;min-width:0">
+                    <div style="font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.service_name}</div>
+                    <div style="font-size:12px;color:var(--text-secondary)">${s.plan_name} · ${s.category}</div>
+                </div>
+                ${Fmt.statusBadge(s.status)}
+            </div>
+            <div class="sub-card-body">
+                <div class="sub-meta-row">
+                    <span class="sub-meta-key">Amount</span>
+                    <span class="sub-meta-val" style="color:var(--accent-cyan);font-family:var(--font-display);font-size:16px">
+                        ${Fmt.currency(s.amount, s.currency)} <span style="font-size:11px;color:var(--text-secondary)">/ ${Fmt.cycle(s.billing_cycle)}</span>
+                    </span>
+                </div>
+                <div class="sub-meta-row">
+                    <span class="sub-meta-key">Started</span>
+                    <span class="sub-meta-val">${Fmt.date(s.start_date)}</span>
+                </div>
+                <div class="sub-meta-row">
+                    <span class="sub-meta-key">Next Billing</span>
+                    <span class="sub-meta-val ${urgency ? "text-orange" : ""}">
+                        ${Fmt.date(s.next_billing_date)}
+                        <span class="text-sm text-muted"> (${Fmt.relativeDate(s.next_billing_date)})</span>
+                    </span>
+                </div>
+                <div class="sub-meta-row">
+                    <span class="sub-meta-key">Auto-Renew</span>
+                    <span class="sub-meta-val">${
+                      s.auto_renew
+                        ? '<span class="text-green"><i class="bi bi-check-circle-fill"></i> Yes</span>'
+                        : '<span class="text-muted"><i class="bi bi-x-circle"></i> No</span>'
+                    }</span>
+                </div>
+            </div>
+            <div class="sub-card-footer">
+                <a href="transactions.html?sub=${s.subscription_id}" class="btn btn-outline btn-sm">
+                    <i class="bi bi-receipt"></i> Txns
+                </a>
+                ${
+                  s.status === "active"
+                    ? `
+                <button class="btn btn-danger btn-sm" onclick="openCancelModal(${s.subscription_id},'${s.service_name}')">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </button>`
+                    : ""
+                }
+            </div>
+        </div>`;
+          })
+          .join("");
+      }
+
+      function updateSummary() {
+        const active = allSubs.filter((s) => s.status === "active");
+        const monthlyTotal = active.reduce((sum, s) => {
+          const multiplier =
+            { daily: 30, weekly: 4.33, monthly: 1, yearly: 1 / 12 }[
+              s.billing_cycle
+            ] || 1;
+          return sum + parseFloat(s.amount) * multiplier;
+        }, 0);
+        document.getElementById("sum-monthly").textContent =
+          Fmt.currency(monthlyTotal);
+        document.getElementById("sum-yearly").textContent = Fmt.currency(
+          monthlyTotal * 12,
+        );
+        document.getElementById("sum-count").textContent = active.length;
+      }
+
+      function openCancelModal(id, name) {
+        cancelTarget = id;
+        document.getElementById("cancel-modal-name").textContent =
+          `Cancel "${name}"? This will mark it as cancelled.`;
+        document.getElementById("cancel-modal").style.display = "flex";
+      }
+
+      function closeCancelModal() {
+        cancelTarget = null;
+        document.getElementById("cancel-modal").style.display = "none";
+      }
+
+      async function confirmCancel() {
+        if (!cancelTarget) return;
+        try {
+          await Api.delete(`/subscriptions/${cancelTarget}`);
+          Toast.success("Subscription cancelled.");
+          closeCancelModal();
+          loadSubs();
+        } catch (err) {
+          Toast.error(err.message);
+        }
+      }
+
+      loadSubs();
+    </script>
+  </body>
+</html>

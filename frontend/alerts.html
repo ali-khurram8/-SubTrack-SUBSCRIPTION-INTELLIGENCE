@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SubTrack — Alerts</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">💳</div>
+        <div>
+          <div class="brand-name">SUBTRACK</div>
+          <div class="brand-sub">Subscription Intelligence</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
+      <div class="sidebar-footer" id="sidebar-user"></div>
+    </aside>
+
+    <main class="main-content">
+      <div class="topbar">
+        <div>
+          <div class="page-title">Alerts</div>
+          <div class="page-subtitle">Your notifications and renewals</div>
+        </div>
+        <div class="topbar-actions">
+          <a href="add-alert.html" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Add New
+          </a>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="card mb-4" style="padding: 20px;">
+            <div id="alerts-list"><div class="loading">Loading...</div></div>
+        </div>
+      </div>
+    </main>
+
+    <script src="js/app.js"></script>
+    <script>
+      Auth.requireAuth();
+      initSidebar();
+      
+      async function loadAlerts() {
+        try {
+          const data = await Api.get('/alerts');
+          const alerts = data.data;
+          
+          if (!alerts.length) {
+              document.getElementById('alerts-list').innerHTML = '<div class="empty-state"><i class="bi bi-bell-slash"></i><p>No alerts found.</p></div>';
+              return;
+          }
+          
+          document.getElementById('alerts-list').innerHTML = alerts.map(a => `
+            <div class="alert-item ${a.is_read ? "" : "unread"} ${a.severity}" style="margin-bottom: 12px;">
+                <div class="alert-icon ${a.severity}">
+                    <i class="bi ${
+                      a.severity === "critical"
+                        ? "bi-exclamation-triangle-fill"
+                        : a.severity === "warning"
+                          ? "bi-exclamation-circle-fill"
+                          : "bi-bell-fill"
+                    }"></i>
+                </div>
+                <div style="flex: 1;">
+                    <div class="alert-title">${a.title}</div>
+                    <div class="alert-msg">${a.message}</div>
+                    <div class="alert-time">${Fmt.date(a.created_at)}</div>
+                </div>
+                ${!a.is_read ? `<button class="btn btn-outline btn-sm" onclick="markRead(${a.alert_id})">Mark Read</button>` : ''}
+            </div>
+          `).join('');
+        } catch (err) {
+            Toast.error("Failed to load alerts: " + err.message);
+            document.getElementById('alerts-list').innerHTML = '<div class="empty-state">Error loading alerts.</div>';
+        }
+      }
+
+      async function markRead(id) {
+          try {
+              await Api.patch(`/alerts/${id}/read`);
+              loadAlerts();
+              initSidebar(); // Update badge
+          } catch(err) {
+              Toast.error("Could not mark as read");
+          }
+      }
+      
+      loadAlerts();
+    </script>
+  </body>
+</html>

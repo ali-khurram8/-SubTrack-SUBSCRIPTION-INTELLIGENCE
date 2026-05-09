@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SubTrack — Smart Subscription Tracker</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .auth-left {
+      background: #0e0e14;
+    }
+
+    .auth-left-content {
+      position: relative;
+      z-index: 2;
+      max-width: 440px;
+      width: 100%;
+    }
+
+    /* Ambient light blobs */
+    .glow {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      pointer-events: none;
+    }
+    .glow-1 { width: 350px; height: 350px; background: rgba(124,92,252,0.12); top: -8%; left: -15%; animation: drift 18s ease-in-out infinite; }
+    .glow-2 { width: 280px; height: 280px; background: rgba(255,107,107,0.08); bottom: 5%; right: -10%; animation: drift 22s ease-in-out infinite reverse; }
+    .glow-3 { width: 200px; height: 200px; background: rgba(251,191,36,0.06); top: 55%; left: 50%; animation: drift 16s ease-in-out infinite 3s; }
+
+    @keyframes drift {
+      0%, 100% { transform: translate(0, 0); }
+      25% { transform: translate(15px, -25px); }
+      50% { transform: translate(-10px, 10px); }
+      75% { transform: translate(20px, 15px); }
+    }
+
+    /* Brand */
+    .hero-brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 60px;
+    }
+
+    .hero-brand-icon {
+      width: 52px; height: 52px;
+      background: var(--gradient-1);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: #fff;
+      box-shadow: 0 5px 0 #3d2ea0, 0 10px 30px rgba(124,92,252,0.3);
+      transition: var(--transition);
+    }
+
+    .hero-brand-icon:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 0 #3d2ea0, 0 14px 40px rgba(124,92,252,0.4);
+    }
+
+    .hero-brand-name {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.5px;
+    }
+
+    .hero-brand-tag {
+      font-size: 10px;
+      color: var(--accent-1);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      font-weight: 600;
+    }
+
+    /* Headline */
+    .hero-headline {
+      font-family: var(--font-display);
+      font-size: 46px;
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -2px;
+      margin-bottom: 20px;
+      color: var(--text-primary);
+    }
+
+    .hero-headline em {
+      font-style: normal;
+      color: var(--accent-2);
+      text-shadow: 0 0 40px rgba(255,107,107,0.25);
+    }
+
+    .hero-desc {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.8;
+      margin-bottom: 44px;
+    }
+
+    /* Stats row - 3D boxes */
+    .hero-stats {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+
+    .hero-stat-box {
+      flex: 1;
+      background: var(--bg-card);
+      border-radius: 6px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 4px 0 #111116, 0 8px 24px rgba(0,0,0,0.4);
+      transition: var(--transition-spring);
+      cursor: default;
+    }
+
+    .hero-stat-box:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 0 #111116, 0 14px 36px rgba(0,0,0,0.5);
+    }
+
+    .hero-stat-box .num {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .hero-stat-box .label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 600;
+    }
+
+    /* Feature cards - 3D */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border-radius: 6px;
+      padding: 22px;
+      box-shadow: 0 3px 0 #111116, 0 6px 18px rgba(0,0,0,0.35);
+      transition: var(--transition-spring);
+      cursor: default;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 7px 0 #111116, 0 12px 32px rgba(0,0,0,0.45);
+    }
+
+    .feature-card-icon {
+      width: 40px; height: 40px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm), var(--shadow-inner);
+    }
+
+    .feature-card-title {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 5px;
+      letter-spacing: -0.2px;
+    }
+
+    .feature-card-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Right side form */
+    .auth-title {
+      font-size: 36px;
+    }
+
+    .btn-login-full {
+      width: 100%;
+      justify-content: center;
+      padding: 14px;
+      font-size: 14px;
+      border-radius: 6px;
+    }
+
+    /* Demo badge */
+    .demo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 28px;
+      padding: 10px 18px;
+      background: var(--bg-card);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .demo-badge code {
+      color: var(--accent-1);
+      font-weight: 600;
+      background: rgba(124,92,252,0.1);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+
+    /* Trust bar */
+    .trust-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      margin-top: 32px;
+      padding-top: 24px;
+    }
+
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .trust-item i { font-size: 14px; color: var(--accent-5); }
+
+    @media (max-width: 768px) {
+      .auth-left { display: none; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .hero-stats { flex-direction: column; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="auth-page">
+    <!-- Left panel -->
+    <div class="auth-left">
+      <div class="glow glow-1"></div>
+      <div class="glow glow-2"></div>
+      <div class="glow glow-3"></div>
+
+      <div class="auth-left-content">
+        <div class="hero-brand">
+          <div class="hero-brand-icon">
+            <i class="bi bi-credit-card-2-front-fill"></i>
+          </div>
+          <div>
+            <div class="hero-brand-name">SubTrack</div>
+            <div class="hero-brand-tag">Subscription Intelligence</div>
+          </div>
+        </div>
+
+        <h1 class="hero-headline">
+          Stop losing money to<br /><em>hidden charges.</em>
+        </h1>
+
+        <p class="hero-desc">
+          Track every subscription, catch silent price hikes,
+          and get reminders before auto-renewals hit your wallet.
+        </p>
+
+        <div class="hero-stats">
+          <div class="hero-stat-box">
+            <div class="num" style="color:var(--accent-1)">$240</div>
+            <div class="label">Avg. Saved/Year</div>
+          </div>
+          <div class="hero-stat-box">
+            <div class="num" style="color:var(--accent-5)">98%</div>
+            <div class="label">Detection Rate</div>
+          </div>
+          <div class="hero-stat-box">
+            <div class="num" style="color:var(--accent-3)">50+</div>
+            <div class="label">Services</div>
+          </div>
+        </div>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-card-icon" style="background:rgba(124,92,252,0.1);color:var(--accent-1)">
+              <i class="bi bi-collection-fill"></i>
+            </div>
+            <div class="feature-card-title">Track Everything</div>
+            <div class="feature-card-desc">All subscriptions in one dashboard</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon" style="background:rgba(255,107,107,0.1);color:var(--accent-2)">
+              <i class="bi bi-shield-exclamation"></i>
+            </div>
+            <div class="feature-card-title">Detect Charges</div>
+            <div class="feature-card-desc">Auto-catch price spikes & duplicates</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon" style="background:rgba(74,222,128,0.1);color:var(--accent-5)">
+              <i class="bi bi-bell-fill"></i>
+            </div>
+            <div class="feature-card-title">Smart Alerts</div>
+            <div class="feature-card-desc">Reminders before you get charged</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon" style="background:rgba(251,191,36,0.1);color:var(--accent-3)">
+              <i class="bi bi-graph-up-arrow"></i>
+            </div>
+            <div class="feature-card-title">Analytics</div>
+            <div class="feature-card-desc">Monthly spending breakdowns</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right panel -->
+    <div class="auth-right">
+      <div class="auth-box">
+        <div class="auth-title">Welcome Back</div>
+        <div class="auth-subtitle">Sign in to manage your subscriptions</div>
+
+        <div class="tab-btns">
+          <button class="tab-btn active" onclick="switchTab('login')">Sign In</button>
+          <button class="tab-btn" onclick="switchTab('register')">Create Account</button>
+        </div>
+
+        <!-- Login Form -->
+        <div class="form-panel active" id="panel-login">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-envelope"></i>
+              <input type="email" class="form-control" id="login-email" placeholder="you@example.com" value="ali@example.com" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-lock"></i>
+              <input type="password" class="form-control" id="login-password" placeholder="Enter your password" value="Password123!" />
+              <button class="pass-toggle" onclick="togglePass('login-password', this)" type="button">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-login-full" onclick="handleLogin()" id="login-btn">
+            <i class="bi bi-box-arrow-in-right"></i> Sign In
+          </button>
+        </div>
+
+        <!-- Register Form -->
+        <div class="form-panel" id="panel-register">
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <div class="input-icon-wrap">
+                <i class="bi bi-person"></i>
+                <input type="text" class="form-control" id="reg-name" placeholder="Your full name" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone (optional)</label>
+              <div class="input-icon-wrap">
+                <i class="bi bi-telephone"></i>
+                <input type="tel" class="form-control" id="reg-phone" placeholder="+92-300-..." />
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-envelope"></i>
+              <input type="email" class="form-control" id="reg-email" placeholder="you@example.com" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password (min 8 chars)</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-lock"></i>
+              <input type="password" class="form-control" id="reg-password" placeholder="Create a strong password" />
+              <button class="pass-toggle" onclick="togglePass('reg-password', this)" type="button">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-login-full" onclick="handleRegister()" id="reg-btn">
+            <i class="bi bi-person-plus"></i> Create Account
+          </button>
+        </div>
+
+        <div class="demo-badge">
+          <i class="bi bi-lightning-charge-fill" style="color:var(--accent-3)"></i>
+          Demo: <code>ali@example.com</code> / <code>Password123!</code>
+        </div>
+
+        <div class="trust-bar">
+          <div class="trust-item"><i class="bi bi-shield-check"></i> Encrypted</div>
+          <div class="trust-item"><i class="bi bi-lock-fill"></i> JWT Auth</div>
+          <div class="trust-item"><i class="bi bi-database-fill-check"></i> Supabase</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    if (Auth.isLoggedIn()) window.location.href = "dashboard.html";
+
+    function switchTab(tab) {
+      document.querySelectorAll(".tab-btn").forEach((b, i) =>
+        b.classList.toggle("active", (i === 0 && tab === "login") || (i === 1 && tab === "register"))
+      );
+      document.getElementById("panel-login").classList.toggle("active", tab === "login");
+      document.getElementById("panel-register").classList.toggle("active", tab === "register");
+    }
+
+    function togglePass(id, btn) {
+      const inp = document.getElementById(id);
+      inp.type = inp.type === "password" ? "text" : "password";
+      btn.querySelector("i").className = inp.type === "password" ? "bi bi-eye" : "bi bi-eye-slash";
+    }
+
+    async function handleLogin() {
+      const btn = document.getElementById("login-btn");
+      const email = document.getElementById("login-email").value.trim();
+      const password = document.getElementById("login-password").value;
+      if (!email || !password) return Toast.error("Please fill all fields");
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite"></i> Signing in...';
+      try {
+        const data = await Api.post("/auth/login", { email, password });
+        Auth.setSession(data.token, data.user);
+        Toast.success("Welcome back, " + data.user.full_name + "!");
+        setTimeout(() => (window.location.href = "dashboard.html"), 800);
+      } catch (err) {
+        Toast.error(err.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Sign In';
+      }
+    }
+
+    async function handleRegister() {
+      const btn = document.getElementById("reg-btn");
+      const full_name = document.getElementById("reg-name").value.trim();
+      const email = document.getElementById("reg-email").value.trim();
+      const password = document.getElementById("reg-password").value;
+      const phone = document.getElementById("reg-phone").value.trim();
+
+      if (!full_name || !email || !password) return Toast.error("Please fill required fields");
+      if (password.length < 8) return Toast.error("Password must be at least 8 characters");
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite"></i> Creating...';
+      try {
+        const data = await Api.post("/auth/register", { full_name, email, password, phone });
+        Auth.setSession(data.token, data.user);
+        Toast.success("Account created! Welcome, " + data.user.full_name + "!");
+        setTimeout(() => (window.location.href = "dashboard.html"), 800);
+      } catch (err) {
+        Toast.error(err.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-person-plus"></i> Create Account';
+      }
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      if (document.getElementById("panel-login").classList.contains("active")) handleLogin();
+      else handleRegister();
+    });
+  </script>
+</body>
+
+</html>

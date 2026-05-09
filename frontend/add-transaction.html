@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SubTrack — Add Transaction</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">💳</div>
+        <div>
+          <div class="brand-name">SUBTRACK</div>
+          <div class="brand-sub">Subscription Intelligence</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
+      <div class="sidebar-footer" id="sidebar-user"></div>
+    </aside>
+
+    <main class="main-content">
+      <div class="topbar">
+        <div>
+          <div class="page-title">Add Transaction</div>
+          <div class="page-subtitle">Record a new payment manually</div>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="card" style="max-width: 600px; padding: 24px;">
+            <form id="add-txn-form" onsubmit="submitForm(event)">
+                <div style="margin-bottom: 16px;">
+                    <label style="display:block; margin-bottom: 8px; font-weight: 600;">Subscription ID (Optional)</label>
+                    <input type="number" id="subscription_id" class="form-control" placeholder="ID of the subscription" style="width: 100%;">
+                </div>
+                
+                <div class="grid-2" style="margin-bottom: 16px; gap: 16px;">
+                    <div>
+                        <label style="display:block; margin-bottom: 8px; font-weight: 600;">Amount</label>
+                        <input type="number" id="amount" step="0.01" class="form-control" required placeholder="0.00" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom: 8px; font-weight: 600;">Date</label>
+                        <input type="date" id="transaction_date" class="form-control" required style="width: 100%;">
+                    </div>
+                </div>
+
+                <div class="grid-2" style="margin-bottom: 16px; gap: 16px;">
+                    <div>
+                        <label style="display:block; margin-bottom: 8px; font-weight: 600;">Payment Method</label>
+                        <input type="text" id="payment_method" class="form-control" placeholder="e.g. Visa *4242" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom: 8px; font-weight: 600;">Status</label>
+                        <select id="status" class="form-control" required style="width: 100%;">
+                            <option value="completed">Completed</option>
+                            <option value="pending">Pending</option>
+                            <option value="failed">Failed</option>
+                            <option value="refunded">Refunded</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                    <a href="transactions.html" class="btn btn-outline">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Transaction</button>
+                </div>
+            </form>
+        </div>
+      </div>
+    </main>
+
+    <script src="js/app.js"></script>
+    <script>
+      Auth.requireAuth();
+      initSidebar();
+      
+      document.getElementById('transaction_date').valueAsDate = new Date();
+      
+      async function submitForm(e) {
+          e.preventDefault();
+          const subIdStr = document.getElementById('subscription_id').value;
+          const body = {
+              subscription_id: subIdStr ? parseInt(subIdStr) : null,
+              amount: parseFloat(document.getElementById('amount').value),
+              transaction_date: document.getElementById('transaction_date').value,
+              payment_method: document.getElementById('payment_method').value,
+              status: document.getElementById('status').value
+          };
+          
+          try {
+              const btn = document.querySelector('button[type="submit"]');
+              btn.disabled = true;
+              btn.innerText = 'Saving...';
+              
+              await Api.post('/transactions', body);
+              Toast.success('Transaction added successfully');
+              setTimeout(() => {
+                  window.location.href = 'transactions.html';
+              }, 1000);
+          } catch(err) {
+              Toast.error(err.message);
+              document.querySelector('button[type="submit"]').disabled = false;
+              document.querySelector('button[type="submit"]').innerText = 'Save Transaction';
+          }
+      }
+    </script>
+  </body>
+</html>

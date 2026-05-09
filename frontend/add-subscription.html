@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SubTrack — Add Subscription</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">💳</div>
+        <div>
+          <div class="brand-name">SUBTRACK</div>
+          <div class="brand-sub">Subscription Intelligence</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
+      <div class="sidebar-footer" id="sidebar-user"></div>
+    </aside>
+
+    <main class="main-content">
+      <div class="topbar">
+        <div>
+          <div class="page-title">Add Subscription</div>
+          <div class="page-subtitle">Track a new service</div>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="card" style="max-width: 600px; padding: 24px;">
+            <form id="add-sub-form" onsubmit="submitForm(event)">
+                <div style="margin-bottom: 16px;">
+                    <label style="display:block; margin-bottom: 8px; font-weight: 600;">Service Name</label>
+                    <input type="text" id="service_name" class="form-control" required placeholder="e.g. Netflix" style="width: 100%;">
+                </div>
+                
+                <div class="grid-2" style="margin-bottom: 16px; gap: 16px;">
+                    <div>
+                        <label style="display:block; margin-bottom: 8px; font-weight: 600;">Plan Name</label>
+                        <input type="text" id="plan_name" class="form-control" required placeholder="e.g. Premium" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom: 8px; font-weight: 600;">Category</label>
+                        <select id="category" class="form-control" required style="width: 100%;">
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Software">Software</option>
+                            <option value="Music">Music</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Cloud">Cloud Storage</option>
+                            <option value="Education">Education</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="margin-bottom: 16px; gap: 16px;">
+                    <div>
+                        <label style="display:block; margin-bottom: 8px; font-weight: 600;">Amount</label>
+                        <input type="number" id="amount" step="0.01" class="form-control" required placeholder="0.00" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom: 8px; font-weight: 600;">Currency</label>
+                        <select id="currency" class="form-control" required style="width: 100%;">
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                            <option value="GBP">GBP</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="margin-bottom: 16px; gap: 16px;">
+                    <div>
+                        <label style="display:block; margin-bottom: 8px; font-weight: 600;">Billing Cycle</label>
+                        <select id="billing_cycle" class="form-control" required style="width: 100%;">
+                            <option value="monthly">Monthly</option>
+                            <option value="yearly">Yearly</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom: 8px; font-weight: 600;">Start Date</label>
+                        <input type="date" id="start_date" class="form-control" required style="width: 100%;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor: pointer;">
+                        <input type="checkbox" id="auto_renew" checked>
+                        <span style="font-weight: 600;">Auto Renew</span>
+                    </label>
+                </div>
+
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <a href="subscriptions.html" class="btn btn-outline">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Subscription</button>
+                </div>
+            </form>
+        </div>
+      </div>
+    </main>
+
+    <script src="js/app.js"></script>
+    <script>
+      Auth.requireAuth();
+      initSidebar();
+      
+      // Set today as default start date
+      document.getElementById('start_date').valueAsDate = new Date();
+      
+      async function submitForm(e) {
+          e.preventDefault();
+          const body = {
+              service_name: document.getElementById('service_name').value,
+              plan_name: document.getElementById('plan_name').value,
+              category: document.getElementById('category').value,
+              amount: parseFloat(document.getElementById('amount').value),
+              currency: document.getElementById('currency').value,
+              billing_cycle: document.getElementById('billing_cycle').value,
+              start_date: document.getElementById('start_date').value,
+              auto_renew: document.getElementById('auto_renew').checked,
+              status: 'active'
+          };
+          
+          try {
+              await Api.post('/subscriptions', body);
+              Toast.success('Subscription added successfully');
+              setTimeout(() => {
+                  window.location.href = 'subscriptions.html';
+              }, 1000);
+          } catch(err) {
+              Toast.error(err.message);
+          }
+      }
+    </script>
+  </body>
+</html>
