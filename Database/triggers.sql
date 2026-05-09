@@ -1,14 +1,3 @@
--- ============================================================
---  TRIGGERS — PostgreSQL (Supabase)
---  Subscription Management & Hidden Charges Tracker
--- ============================================================
-
--- ── TRIGGER 1 ─────────────────────────────────────────────────
--- After a new Transaction is inserted:
---   (a) Advance the subscription's next_billing_date
---   (b) Detect price changes vs previous transaction
---   (c) Detect duplicate charges (same sub, same period)
--- ──────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION fn_after_transaction_insert()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -18,7 +7,6 @@ DECLARE
     v_sub_amount        DECIMAL(10,2);
     v_hc_id             INT;
 BEGIN
-    -- 1. Advance next_billing_date based on billing cycle
     SELECT p.billing_cycle
       INTO v_billing_cycle
       FROM subscriptions s
@@ -36,7 +24,6 @@ BEGIN
            updated_at = NOW()
      WHERE subscription_id = NEW.subscription_id;
 
-    -- 2. Detect price change vs previous transaction
     SELECT amount
       INTO v_prev_amount
       FROM transactions
@@ -63,17 +50,14 @@ BEGIN
              ROUND(NEW.amount - v_prev_amount, 2) || ')')
         RETURNING hidden_charge_id INTO v_hc_id;
 
-        -- Record in price history
         INSERT INTO price_history (subscription_id, old_amount, new_amount, changed_by, reason)
         VALUES (NEW.subscription_id, v_prev_amount, NEW.amount, 'trigger',
                 'Auto-detected via transaction comparison');
 
-        -- Update subscription amount to reflect new price
         UPDATE subscriptions
            SET amount = NEW.amount, updated_at = NOW()
          WHERE subscription_id = NEW.subscription_id;
 
-        -- Generate alert
         INSERT INTO alerts
             (user_id, subscription_id, hidden_charge_id, alert_type, title, message, severity)
         VALUES
