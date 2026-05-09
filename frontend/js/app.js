@@ -48,7 +48,12 @@ const Api = {
             return;
         }
 
-        if (!res.ok) throw new Error(data.message || 'Request failed');
+        if (!res.ok) {
+            if (data.errors && data.errors.length) {
+                throw new Error(data.errors.map(e => e.message).join(', '));
+            }
+            throw new Error(data.message || 'Request failed');
+        }
         return data;
     },
 
