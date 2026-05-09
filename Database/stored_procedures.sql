@@ -1,13 +1,3 @@
--- ============================================================
---  STORED PROCEDURES (Functions) — PostgreSQL (Supabase)
---  Subscription Management & Hidden Charges Tracker
--- ============================================================
-
--- ── SP 1 ──────────────────────────────────────────────────────
--- sp_monthly_expense_report
--- Returns per-subscription breakdown for a given user and month/year
--- Usage: SELECT * FROM sp_monthly_expense_report(1, 4, 2026);
--- ──────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION sp_monthly_expense_report(
     p_user_id INT,
     p_month INT,
@@ -49,12 +39,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
--- ── SP 2 ──────────────────────────────────────────────────────
--- sp_generate_renewal_alerts
--- Inserts renewal alerts for active subscriptions due within p_days_ahead days
--- Usage: SELECT * FROM sp_generate_renewal_alerts(7);
--- ──────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION sp_generate_renewal_alerts(
     p_days_ahead INT
 )
@@ -94,13 +78,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
--- ── SP 3 ──────────────────────────────────────────────────────
--- sp_check_expired_subscriptions
--- Marks subscriptions as 'expired' if end_date has passed
--- and generates expiry alerts
--- Usage: SELECT * FROM sp_check_expired_subscriptions();
--- ──────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION sp_check_expired_subscriptions()
 RETURNS TABLE (
     expired_subscription_id INT,
@@ -141,12 +118,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
--- ── SP 4 ──────────────────────────────────────────────────────
--- sp_generate_transaction
--- Manually trigger a billing transaction for a subscription
--- Usage: SELECT * FROM sp_generate_transaction(1, 'Visa *4242');
--- ──────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION sp_generate_transaction(
     p_subscription_id INT,
     p_payment_method VARCHAR(80)
@@ -200,12 +171,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
--- ── SP 5 ──────────────────────────────────────────────────────
--- sp_spending_by_category
--- Returns spending totals grouped by category for a user
--- Usage: SELECT * FROM sp_spending_by_category(1, 2026);
--- ──────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION sp_spending_by_category(
     p_user_id INT,
     p_year INT
@@ -237,12 +202,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
--- ── SP 6 ──────────────────────────────────────────────────────
--- sp_resolve_hidden_charge
--- Marks a hidden charge as resolved and notes the reason
--- Usage: SELECT * FROM sp_resolve_hidden_charge(2, 'Disputed and refunded');
--- ──────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION sp_resolve_hidden_charge(
     p_hidden_charge_id INT,
     p_reason VARCHAR(255)
@@ -265,7 +224,6 @@ BEGIN
         RAISE EXCEPTION 'Hidden charge not found';
     END IF;
 
-    -- Auto-mark linked alert as read (also handled by trigger 4)
     UPDATE alerts
        SET is_read = true, read_at = NOW()
      WHERE hidden_charge_id = p_hidden_charge_id
