@@ -97,14 +97,12 @@ class TransactionModel {
                 (subscription_id, user_id, amount, currency,
                  transaction_date, billing_period_start, billing_period_end,
                  status, payment_method, reference_no)
-            VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, ($5::date + $6::interval - INTERVAL '1 day')::date, 'completed', $7, $8)
+            VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, $5::date, 'completed', $6, $7)
             RETURNING transaction_id
-        `, [subscription_id, user_id, amount, currency, next_billing_date, interval, payment_method, ref_no]);
+        `, [subscription_id, user_id, amount, currency, next_billing_date, payment_method, ref_no]);
 
-        await db.query(`
-            UPDATE subscriptions SET next_billing_date = next_billing_date + $1::interval, updated_at = NOW()
-            WHERE subscription_id = $2
-        `, [interval, subscription_id]);
+        // NOTE: next_billing_date is advanced by the PostgreSQL trigger (fn_after_transaction_insert)
+        // Trigger uses: next_billing_date = billing_period_end + INTERVAL based on billing_cycle
 
         return rows[0].transaction_id;
     }
