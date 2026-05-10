@@ -26,9 +26,15 @@
           <div class="page-title">Transactions</div>
           <div class="page-subtitle">View your payment history</div>
         </div>
-        <div class="topbar-actions">
-          <a href="add-transaction.html" class="btn btn-primary">
-            <i class="bi bi-plus-lg"></i> Add New
+        <div class="topbar-actions" style="display:flex;gap:10px;align-items:center;">
+          <select id="gen-sub-select" class="form-control" style="min-width:200px;height:38px;font-size:13px;">
+            <option value="">-- Select Subscription --</option>
+          </select>
+          <button class="btn btn-primary" onclick="generateTransaction()" id="gen-btn">
+            <i class="bi bi-lightning-charge-fill"></i> Generate Payment
+          </button>
+          <a href="add-transaction.html" class="btn btn-outline">
+            <i class="bi bi-plus-lg"></i> Manual
           </a>
         </div>
       </div>
@@ -43,7 +49,42 @@
     <script>
       Auth.requireAuth();
       initSidebar();
-      
+
+      // Load subscription dropdown
+      async function loadSubDropdown() {
+          try {
+              const data = await Api.get('/subscriptions');
+              const select = document.getElementById('gen-sub-select');
+              data.data.filter(s => s.status === 'active').forEach(s => {
+                  const opt = document.createElement('option');
+                  opt.value = s.subscription_id;
+                  opt.textContent = `${s.service_name} — ${Fmt.currency(s.amount)}`;
+                  select.appendChild(opt);
+              });
+          } catch (err) {}
+      }
+      loadSubDropdown();
+
+      // Generate transaction for selected subscription
+      async function generateTransaction() {
+          const subId = document.getElementById('gen-sub-select').value;
+          if (!subId) return Toast.error('Please select a subscription first');
+
+          const btn = document.getElementById('gen-btn');
+          btn.disabled = true;
+          btn.innerHTML = '<i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite"></i> Generating...';
+          try {
+              await Api.post('/transactions/generate', { subscription_id: parseInt(subId), payment_method: 'Auto-Generated' });
+              Toast.success('Transaction generated successfully!');
+              loadTransactions();
+          } catch (err) {
+              Toast.error(err.message);
+          } finally {
+              btn.disabled = false;
+              btn.innerHTML = '<i class="bi bi-lightning-charge-fill"></i> Generate Payment';
+          }
+      }
+
       async function loadTransactions() {
         try {
           const params = new URLSearchParams(window.location.search);
