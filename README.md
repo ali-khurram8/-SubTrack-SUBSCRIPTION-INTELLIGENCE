@@ -9,27 +9,27 @@ A full-stack web application for tracking recurring subscriptions, detecting hid
 ```
 subscription-system-main/
 ├── backend/
-│   ├── config/          # Database connection (pg Pool + Supabase SSL)
-│   ├── controllers/     # Route handlers — auth, subscriptions, data
-│   ├── middleware/       # JWT auth guard & express-validator rules
-│   ├── models/          # SQL query layer — User, Subscription, Transaction
-│   ├── routes/          # Express router with validation middleware
-│   └── server.js        # Entry point — helmet, rate-limit, CORS, cron
+│   ├── config/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   └── server.js
 ├── frontend/
-│   ├── css/style.css    # 3D dark-theme UI with layered box-shadows
-│   ├── js/app.js        # Shared helpers — Auth, Api, Toast, Fmt, Sidebar
-│   ├── index.html       # Landing / login / register page
-│   ├── dashboard.html   # Overview stats and upcoming renewals
+│   ├── css/style.css
+│   ├── js/app.js
+│   ├── index.html
+│   ├── dashboard.html
 │   ├── subscriptions.html
 │   ├── transactions.html
 │   ├── hidden-charges.html
 │   ├── alerts.html
-│   └── analytics.html   # Chart.js line & doughnut charts
+│   └── analytics.html
 └── database/
-    ├── 01_schema_supabase.sql        # 8 PostgreSQL tables
-    ├── 02_sample_data_supabase.sql   # Demo seed data
-    ├── 03_triggers_supabase.sql      # 4 trigger functions
-    └── 04_stored_procedures_supabase.sql  # 6 stored procedures
+    ├── schema.sql
+    ├── sample_data.sql
+    ├── triggers.sql
+    └── stored_procedures.sql
 ```
 
 ---
@@ -108,10 +108,10 @@ Replace the `DATABASE_URL` with your Supabase connection string (found under **P
 
 Run these SQL files **in order** in the Supabase SQL Editor (or any PostgreSQL client):
 
-1. `database/01_schema_supabase.sql` — creates all tables
-2. `database/02_sample_data_supabase.sql` — inserts demo data
-3. `database/03_triggers_supabase.sql` — creates trigger functions
-4. `database/04_stored_procedures_supabase.sql` — creates stored procedures
+1. `database/schema.sql` — creates all tables
+2. `database/sample_data.sql` — inserts demo data
+3. `database/triggers.sql` — creates trigger functions
+4. `database/stored_procedures.sql` — creates stored procedures
 
 ### 5. Start the server
 
@@ -134,55 +134,6 @@ If you loaded the sample data:
 
 ---
 
-## API Endpoints
-
-### Auth
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Create account |
-| POST | `/api/auth/login` | Login, receive JWT |
-| GET | `/api/auth/me` | Current user + dashboard stats |
-
-### Subscriptions
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/subscriptions` | List user subscriptions |
-| GET | `/api/subscriptions/plans` | Available plans |
-| GET | `/api/subscriptions/:id` | Single subscription |
-| POST | `/api/subscriptions` | Add subscription |
-| PATCH | `/api/subscriptions/:id` | Update subscription |
-| DELETE | `/api/subscriptions/:id` | Cancel (soft delete) |
-| GET | `/api/subscriptions/:id/price-history` | Price change log |
-
-### Transactions
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/transactions` | List (filterable by month/year) |
-| POST | `/api/transactions` | Create manual transaction |
-| POST | `/api/transactions/generate` | Auto-generate from subscription |
-| GET | `/api/transactions/report` | Monthly expense report |
-| GET | `/api/transactions/analytics` | Trend + category data for charts |
-
-### Hidden Charges
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/hidden-charges` | List charges |
-| POST | `/api/hidden-charges` | Report a hidden charge |
-| PATCH | `/api/hidden-charges/:id/resolve` | Resolve charge |
-
-### Alerts
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/alerts` | List alerts |
-| POST | `/api/alerts` | Create alert |
-| PATCH | `/api/alerts/:id/read` | Mark as read |
-| PATCH | `/api/alerts/read-all` | Mark all as read |
-| POST | `/api/alerts/generate-renewals` | Trigger renewal check |
-
-All endpoints except auth require a `Bearer <token>` in the `Authorization` header.
-
----
-
 ## Database Design
 
 **8 tables** with foreign-key relationships:
@@ -198,18 +149,6 @@ categories ── plans ── subscriptions
 **4 triggers** handle automatic side-effects (billing-date advancement, price-change detection, duplicate-charge flagging, alert cleanup on cancellation).
 
 **6 stored procedures** provide complex operations (monthly reports, renewal alerts, expired-subscription checks, spending breakdowns).
-
----
-
-## Security
-
-- **helmet** — sets secure HTTP headers (X-Content-Type-Options, Strict-Transport-Security, etc.)
-- **express-rate-limit** — 100 requests per 15 min (API), 20 per 15 min (auth endpoints)
-- **express-validator** — validates and sanitises all user input on write endpoints
-- **bcryptjs** — salted password hashing (10 rounds)
-- **JWT** — stateless authentication with configurable expiry
-- **CORS** — configurable allowed origins
-- **Parameterised queries** — prevents SQL injection (no string concatenation in queries)
 
 ---
 
