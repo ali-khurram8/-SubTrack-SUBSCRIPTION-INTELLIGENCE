@@ -31,27 +31,35 @@
         <div class="card" style="max-width: 600px; padding: 24px;">
             <form id="add-sub-form" onsubmit="submitForm(event)">
                 <div style="margin-bottom: 16px;">
-                    <label style="display:block; margin-bottom: 8px; font-weight: 600;">Service Name</label>
-                    <input type="text" id="service_name" class="form-control" required placeholder="e.g. Netflix" style="width: 100%;">
+                    <label style="display:block; margin-bottom: 8px; font-weight: 600;">Select a Plan</label>
+                    <select id="plan_select" class="form-control" style="width:100%;" onchange="onPlanSelect()">
+                        <option value="">-- Choose from existing plans --</option>
+                        <option value="custom">+ Add Custom Service</option>
+                    </select>
                 </div>
-                
-                <div class="grid-2" style="margin-bottom: 16px; gap: 16px;">
-                    <div>
-                        <label style="display:block; margin-bottom: 8px; font-weight: 600;">Plan Name</label>
-                        <input type="text" id="plan_name" class="form-control" required placeholder="e.g. Premium" style="width: 100%;">
+
+                <div id="custom-fields" style="display:none;">
+                    <div style="margin-bottom: 16px;">
+                        <label style="display:block; margin-bottom: 8px; font-weight: 600;">Service Name</label>
+                        <input type="text" id="service_name" class="form-control" placeholder="e.g. Netflix" style="width: 100%;">
                     </div>
-                    <div>
-                        <label style="display:block; margin-bottom: 8px; font-weight: 600;">Category</label>
-                        <select id="category" class="form-control" required style="width: 100%;">
-                            <option value="Entertainment">Entertainment</option>
-                            <option value="Software">Software</option>
-                            <option value="Music">Music</option>
-                            <option value="Utilities">Utilities</option>
-                            <option value="Cloud">Cloud Storage</option>
-                            <option value="Education">Education</option>
-                            <option value="Other">Other</option>
-                        </select>
+                    <div class="grid-2" style="margin-bottom: 16px; gap: 16px;">
+                        <div>
+                            <label style="display:block; margin-bottom: 8px; font-weight: 600;">Plan Name</label>
+                            <input type="text" id="plan_name" class="form-control" placeholder="e.g. Premium" style="width: 100%;">
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom: 8px; font-weight: 600;">Category</label>
+                            <select id="category" class="form-control" style="width: 100%;">
+                                <option value="">-- Loading --</option>
+                            </select>
+                        </div>
                     </div>
+                </div>
+
+                <div id="plan-info" style="display:none;margin-bottom:16px;padding:14px;background:rgba(124,92,252,0.06);border-radius:6px;">
+                    <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Selected Plan</div>
+                    <div id="plan-info-text" style="font-weight:600;font-size:14px;color:var(--text-primary);"></div>
                 </div>
 
                 <div class="grid-2" style="margin-bottom: 16px; gap: 16px;">
@@ -65,6 +73,7 @@
                             <option value="USD">USD</option>
                             <option value="EUR">EUR</option>
                             <option value="GBP">GBP</option>
+                            <option value="PKR">PKR</option>
                         </select>
                     </div>
                 </div>
@@ -76,6 +85,7 @@
                             <option value="monthly">Monthly</option>
                             <option value="yearly">Yearly</option>
                             <option value="weekly">Weekly</option>
+                            <option value="daily">Daily</option>
                         </select>
                     </div>
                     <div>
@@ -104,16 +114,83 @@
     <script>
       Auth.requireAuth();
       initSidebar();
-      
-      // Set today as default start date
+
       document.getElementById('start_date').valueAsDate = new Date();
-      
+
+      let allPlans = [];
+
+      // Load plans into dropdown
+      async function loadPlans() {
+          try {
+              const data = await Api.get('/subscriptions/plans');
+              allPlans = data.data;
+              const select = document.getElementById('plan_select');
+
+              // Group by category
+              const grouped = {};
+              allPlans.forEach(p => {
+                  const cat = p.category || 'Other';
+                  if (!grouped[cat]) grouped[cat] = [];
+                  grouped[cat].push(p);
+              });
+
+              Object.keys(grouped).sort().forEach(cat => {
+                  const group = document.createElement('optgroup');
+                  group.label = cat;
+                  grouped[cat].forEach(p => {
+                      const opt = document.createElement('option');
+                      opt.value = p.plan_id;
+                      opt.textContent = `${p.service_name} — ${p.plan_name} (${Fmt.currency(p.base_price)}/${Fmt.cycle(p.billing_cycle)})`;
+                      group.appendChild(opt);
+                  });
+                  select.appendChild(group);
+              });
+
+              // Load categories for custom field
+              const catSelect = document.getElementById('category');
+              const cats = [...new Set(allPlans.map(p => p.category))].sort();
+              catSelect.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('') +
+                  '<option value="Other">Other</option>';
+
+          } catch (err) {
+              Toast.error('Failed to load plans');
+          }
+      }
+      loadPlans();
+
+      function onPlanSelect() {
+          const val = document.getElementById('plan_select').value;
+          const customFields = document.getElementById('custom-fields');
+          const planInfo = document.getElementById('plan-info');
+
+          if (val === 'custom') {
+              customFields.style.display = 'block';
+              planInfo.style.display = 'none';
+              document.getElementById('amount').value = '';
+              document.getElementById('billing_cycle').value = 'monthly';
+          } else if (val) {
+              const plan = allPlans.find(p => p.plan_id == val);
+              if (plan) {
+                  customFields.style.display = 'none';
+                  planInfo.style.display = 'block';
+                  document.getElementById('plan-info-text').textContent =
+                      `${plan.service_name} — ${plan.plan_name} (${plan.category})`;
+                  document.getElementById('amount').value = plan.base_price;
+                  document.getElementById('currency').value = plan.currency || 'USD';
+                  document.getElementById('billing_cycle').value = plan.billing_cycle;
+              }
+          } else {
+              customFields.style.display = 'none';
+              planInfo.style.display = 'none';
+              document.getElementById('amount').value = '';
+          }
+      }
+
       async function submitForm(e) {
           e.preventDefault();
+          const planVal = document.getElementById('plan_select').value;
+
           const body = {
-              service_name: document.getElementById('service_name').value,
-              plan_name: document.getElementById('plan_name').value,
-              category: document.getElementById('category').value,
               amount: parseFloat(document.getElementById('amount').value),
               currency: document.getElementById('currency').value,
               billing_cycle: document.getElementById('billing_cycle').value,
@@ -121,15 +198,32 @@
               auto_renew: document.getElementById('auto_renew').checked,
               status: 'active'
           };
-          
+
+          if (planVal === 'custom') {
+              body.service_name = document.getElementById('service_name').value;
+              body.plan_name = document.getElementById('plan_name').value;
+              body.category = document.getElementById('category').value;
+              if (!body.service_name || !body.plan_name) {
+                  return Toast.error('Please fill service name and plan name');
+              }
+          } else if (planVal) {
+              body.plan_id = parseInt(planVal);
+          } else {
+              return Toast.error('Please select a plan or choose custom');
+          }
+
           try {
+              const btn = document.querySelector('button[type="submit"]');
+              btn.disabled = true;
+              btn.textContent = 'Saving...';
               await Api.post('/subscriptions', body);
-              Toast.success('Subscription added successfully');
-              setTimeout(() => {
-                  window.location.href = 'subscriptions.html';
-              }, 1000);
+              Toast.success('Subscription added successfully!');
+              setTimeout(() => { window.location.href = 'subscriptions.html'; }, 1000);
           } catch(err) {
               Toast.error(err.message);
+              const btn = document.querySelector('button[type="submit"]');
+              btn.disabled = false;
+              btn.textContent = 'Save Subscription';
           }
       }
     </script>
